@@ -1,8 +1,7 @@
 # Import python packages
 import streamlit as st
-import pandas as pd
-from snowflake.snowpark.context import get_active_session
 from snowflake.snowpark.functions import col,when_matched
+import requests
 
 
 # Write directly to the app
@@ -16,23 +15,20 @@ name_on_order = st.text_input("Name on Smoothie: ")
 st.write('The name on your Smoothie will be ',name_on_order)
 
 
-#connect to snowflake
-session = get_active_session()
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'),col('search_on'))
+cnx=st.connection("snowflake")
+session = cnx.session()
+my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'))
 #st.dataframe(data=my_dataframe, use_container_width=True)
-#st.stop()
 
-pd_df=my_dataframe.to_pandas()
-#st.dataframe(pd_df)
-#st.stop()
 ingredients_list = st.multiselect ('Choose upto 5 ingredients',my_dataframe, max_selections=5)
 
 if ingredients_list:
     ingredients_string=' '
     for each_fruit in ingredients_list:
         ingredients_string+=each_fruit + ' '
-        search_on=pd_df.loc[pd_df['FRUIT_NAME'] == each_fruit, 'search_on'].iloc[0]
-        st.write('The search value for ', each_fruit,' is ', search_on, '.')
+        st.subheader(each_fruit + ' Nutrition_Information ')
+        smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/"+ {search_on})
+        sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 
     #st.write(ingredients_string)
 
@@ -47,3 +43,6 @@ if ingredients_list:
     if time_to_order:
         session.sql(my_insert_stmt).collect()
         st.success('Your Smoothie is ordered!',icon="✅")
+
+
+
