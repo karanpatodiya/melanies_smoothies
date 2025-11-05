@@ -2,7 +2,6 @@
 import streamlit as st
 from snowflake.snowpark.functions import col,when_matched
 import requests
-import pandas as pd
 
 
 # Write directly to the app
@@ -20,7 +19,6 @@ cnx=st.connection("snowflake")
 session = cnx.session()
 my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'))
 #st.dataframe(data=my_dataframe, use_container_width=True)
-pd_df=my_dataframe.to_pandas()
 
 ingredients_list = st.multiselect ('Choose upto 5 ingredients',my_dataframe, max_selections=5)
 
@@ -28,12 +26,8 @@ if ingredients_list:
     ingredients_string=' '
     for each_fruit in ingredients_list:
         ingredients_string+=each_fruit + ' '
-        
-        search_on=pd_df.loc[pd_df['FRUIT_NAME'] == each_fruit, 'SEARCH_ON'].iloc[0]
-        st.write('The search value for ', each_fruit,' is ', search_on, '.')
-        
         st.subheader(each_fruit + ' Nutrition_Information ')
-        smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/{search_on}")
+        smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/"+ {search_on})
         sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 
     #st.write(ingredients_string)
@@ -49,3 +43,6 @@ if ingredients_list:
     if time_to_order:
         session.sql(my_insert_stmt).collect()
         st.success('Your Smoothie is ordered!',icon="✅")
+
+
+
